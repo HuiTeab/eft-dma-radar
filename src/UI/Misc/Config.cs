@@ -378,11 +378,11 @@ namespace eft_dma_radar.UI.Misc
         public ExpanderStatesConfig ExpanderStates { get; set; } = new();
 
         /// <summary>
-        /// Mission planner planning weight settings.
+        /// Quest planner filter settings.
         /// </summary>
-        [JsonPropertyName("missionPlanner")]
+        [JsonPropertyName("questPlanner")]
         [JsonInclude]
-        public MissionPlannerSettings MissionPlanner { get; set; } = new MissionPlannerSettings();
+        public QuestPlannerSettings QuestPlanner { get; set; } = new QuestPlannerSettings();
 
         /// <summary>
         /// Config Name.
@@ -841,8 +841,8 @@ namespace eft_dma_radar.UI.Misc
             if (config.InterfaceColors == null)
                 config.InterfaceColors = InterfaceColorOptions.GetDefaultColors();
 
-            if (config.MissionPlanner == null)
-                config.MissionPlanner = new MissionPlannerSettings();
+            if (config.QuestPlanner == null)
+                config.QuestPlanner = new QuestPlannerSettings();
 
             if (config.PanelPositions != null)
             {
@@ -2853,9 +2853,8 @@ namespace eft_dma_radar.UI.Misc
 
     /// <summary>
     /// Quest Planner filter settings.
-    /// Speed/Safety/DependencyWeight fields removed — they were never wired to the algorithm (dead code).
     /// </summary>
-    public sealed class MissionPlannerSettings
+    public sealed class QuestPlannerSettings
     {
         /// <summary>
         /// When true, restricts the active quest display to Kappa-required quests only.
