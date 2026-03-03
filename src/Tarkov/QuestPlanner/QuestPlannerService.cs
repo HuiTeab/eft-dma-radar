@@ -1,8 +1,11 @@
 using System.Collections.Frozen;
 using eft_dma_radar.Common.Misc;
 using eft_dma_radar.Common.Misc.Data;
-using eft_dma_radar.UI.Misc;
+using eft_dma_radar.Common.Unity;
 using eft_dma_radar.Tarkov.QuestPlanner.Models;
+using eft_dma_radar.Tarkov.Unity.IL2CPP;
+using eft_dma_radar.UI.Misc;
+using SDK;
 using static eft_dma_radar.Tarkov.MemoryInterface;
 
 namespace eft_dma_radar.Tarkov.QuestPlanner;
@@ -29,9 +32,9 @@ public enum QuestConnectionState
 }
 
 /// <summary>
-/// Background orchestrator that pipelines ProfileAccessor, QuestReader, and QuestService
-/// on a ~10s lobby poll. Implements change detection to skip recomputation when quest state
-/// is unchanged. Exposes Current (latest QuestSummary) and State (Lobby/InRaid/Disconnected)
+/// Background orchestrator that pipelines QuestReader and QuestService on a ~10s lobby poll.
+/// Implements change detection to skip recomputation when quest state is unchanged.
+/// Exposes Current (latest QuestSummary) and State (Lobby/InRaid/Disconnected)
 /// as static properties for the Quest Planner UI tab.
 /// </summary>
 internal static class QuestPlannerService
@@ -150,7 +153,6 @@ internal static class QuestPlannerService
                 IsStale = false;
                 _forceRecompute = true;
                 _stateTransitionTime = DateTime.UtcNow;
-                ProfileAccessor.ClearCache();
             }
             return;
         }
@@ -166,7 +168,6 @@ internal static class QuestPlannerService
                 IsStale = false;
                 _forceRecompute = true; // Force recompute when we return to lobby
                 _stateTransitionTime = DateTime.UtcNow;
-                ProfileAccessor.ClearCache();
             }
             return;
         }
@@ -175,7 +176,7 @@ internal static class QuestPlannerService
         State = QuestConnectionState.Lobby;
 
         // 4. Resolve profile pointer
-        var profileAddr = ProfileAccessor.GetProfile();
+        var profileAddr = GetLobbyProfile();
         if (profileAddr == 0)
         {
             // Check if we're within grace period after state transition
@@ -231,6 +232,28 @@ internal static class QuestPlannerService
         // Wait remainder of lobby poll interval (interruptible)
         _wakeSignal.Wait((int)LobbyPollInterval.TotalMilliseconds - 1000);
         _wakeSignal.Reset();
+    }
+
+    /// <summary>
+    /// Resolves the player Profile pointer from TarkovApplication in the lobby.
+    /// Chain: GOM.FindBehaviourByClassName("TarkovApplication") -> _menuOperation (0x130) -> _profile (0x50)
+    /// Returns 0 on failure - never throws.
+    /// </summary>
+    private static ulong GetLobbyProfile()
+    {
+        try
+        {
+            var gom = GameObjectManager.Get(Memory.GOM);
+            ulong app = gom.FindBehaviourByClassName("TarkovApplication");
+            if (!app.IsValidVirtualAddress()) return 0;
+            ulong menuOp = Memory.ReadPtr(app + Offsets.TarkovApplication._menuOperation);
+            if (menuOp == 0) return 0;
+            return Memory.ReadPtr(menuOp + Offsets.MainMenuShowOperation._profile);
+        }
+        catch
+        {
+            return 0;
+        }
     }
 
     /// <summary>
