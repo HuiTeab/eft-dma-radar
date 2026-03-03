@@ -10,7 +10,7 @@ namespace eft_dma_radar.Tarkov.QuestPlanner;
 /// <summary>
 /// Connection state for quest planning purposes.
 /// </summary>
-public enum MissionConnectionState
+public enum QuestConnectionState
 {
     /// <summary>
     /// Game not running or DMA not connected.
@@ -29,12 +29,12 @@ public enum MissionConnectionState
 }
 
 /// <summary>
-/// Background orchestrator that pipelines ProfileAccessor, QuestReader, and MissionService
+/// Background orchestrator that pipelines ProfileAccessor, QuestReader, and QuestService
 /// on a ~10s lobby poll. Implements change detection to skip recomputation when quest state
-/// is unchanged. Exposes Current (latest MissionSummary) and State (Lobby/InRaid/Disconnected)
-/// as static properties for Phase 3 UI tab consumption.
+/// is unchanged. Exposes Current (latest QuestSummary) and State (Lobby/InRaid/Disconnected)
+/// as static properties for the Quest Planner UI tab.
 /// </summary>
-internal static class MissionPlannerService
+internal static class QuestPlannerService
 {
     /// <summary>
     /// Lobby poll interval (~10s matching eft-mission-reader behavior).
@@ -50,12 +50,12 @@ internal static class MissionPlannerService
     /// The latest computed mission summary, or null when not in lobby.
     /// Read by Phase 3 UI tab.
     /// </summary>
-    public static MissionSummary? Current { get; private set; }
+    public static QuestSummary? Current { get; private set; }
 
     /// <summary>
     /// Current connection state from the mission planner's perspective.
     /// </summary>
-    public static MissionConnectionState State { get; private set; } = MissionConnectionState.Disconnected;
+    public static QuestConnectionState State { get; private set; } = QuestConnectionState.Disconnected;
 
     /// <summary>
     /// True when in lobby but couldn't refresh data (profile not available).
@@ -92,7 +92,7 @@ internal static class MissionPlannerService
         new Thread(Worker)
         {
             IsBackground = true,
-            Name = "MissionPlannerService"
+            Name = "QuestPlannerService"
         }.Start();
     }
 
@@ -111,7 +111,7 @@ internal static class MissionPlannerService
     /// </summary>
     private static void Worker()
     {
-        XMLogging.WriteLine("[MissionPlannerService] Thread starting...");
+        XMLogging.WriteLine("[QuestPlannerService] Thread starting...");
 
         while (true)
         {
@@ -124,8 +124,8 @@ internal static class MissionPlannerService
                 var errorDetails = ex.Message;
                 if (ex.InnerException != null)
                     errorDetails += $" | Inner: {ex.InnerException.Message}";
-                XMLogging.WriteLine($"[MissionPlannerService] ERROR: {errorDetails}");
-                State = MissionConnectionState.Disconnected;
+                XMLogging.WriteLine($"[QuestPlannerService] ERROR: {errorDetails}");
+                State = QuestConnectionState.Disconnected;
                 Current = null;
             }
 
@@ -142,10 +142,10 @@ internal static class MissionPlannerService
         // 1. Check DMA connection
         if (!Memory.Ready)
         {
-            if (State != MissionConnectionState.Disconnected)
+            if (State != QuestConnectionState.Disconnected)
             {
-                XMLogging.WriteLine("[MissionPlannerService] DMA disconnected");
-                State = MissionConnectionState.Disconnected;
+                XMLogging.WriteLine("[QuestPlannerService] DMA disconnected");
+                State = QuestConnectionState.Disconnected;
                 Current = null;
                 IsStale = false;
                 _forceRecompute = true;
@@ -158,10 +158,10 @@ internal static class MissionPlannerService
         // 2. Check if in raid - skip quest planning during raids
         if (Memory.InRaid)
         {
-            if (State != MissionConnectionState.InRaid)
+            if (State != QuestConnectionState.InRaid)
             {
-                XMLogging.WriteLine("[MissionPlannerService] In raid - suspending quest planning");
-                State = MissionConnectionState.InRaid;
+                XMLogging.WriteLine("[QuestPlannerService] In raid - suspending quest planning");
+                State = QuestConnectionState.InRaid;
                 Current = null;
                 IsStale = false;
                 _forceRecompute = true; // Force recompute when we return to lobby
@@ -172,7 +172,7 @@ internal static class MissionPlannerService
         }
 
         // 3. We are in lobby (connected, not in raid) - do lobby poll
-        State = MissionConnectionState.Lobby;
+        State = QuestConnectionState.Lobby;
 
         // 4. Resolve profile pointer
         var profileAddr = ProfileAccessor.GetProfile();
@@ -190,7 +190,7 @@ internal static class MissionPlannerService
             // Grace period expired - now mark as stale
             if (!IsStale)
             {
-                XMLogging.WriteLine("[MissionPlannerService] Profile not available - data may be stale");
+                XMLogging.WriteLine("[QuestPlannerService] Profile not available - data may be stale");
                 IsStale = Current != null; // Only stale if we had previous data
             }
             return;
@@ -212,21 +212,21 @@ internal static class MissionPlannerService
         }
 
         // 7. Recompute mission summary
-        XMLogging.WriteLine($"[MissionPlannerService] Recomputing plan ({quests.Started.Count} active quests)");
+        XMLogging.WriteLine($"[QuestPlannerService] Recomputing plan ({quests.Started.Count} active quests)");
 
         if (!EftDataManager.IsInitialized)
         {
-            XMLogging.WriteLine("[MissionPlannerService] TaskData not yet initialized - skipping");
+            XMLogging.WriteLine("[QuestPlannerService] TaskData not yet initialized - skipping");
             return;
         }
 
-        var settings = ConfigManager.CurrentConfig.MissionPlanner;
-        var summary = MissionService.GetSummary(quests, EftDataManager.TaskData, NullStashFilter.Instance, settings);
+        var settings = ConfigManager.CurrentConfig.QuestPlanner;
+        var summary = QuestService.GetSummary(quests, EftDataManager.TaskData, NullStashFilter.Instance, settings);
         Current = summary;
         _lastQuestState = quests;
         _forceRecompute = false;
 
-        XMLogging.WriteLine($"[MissionPlannerService] Plan computed: {summary.Maps.Count} maps, {summary.TotalCompletableObjectives} objectives");
+        XMLogging.WriteLine($"[QuestPlannerService] Plan computed: {summary.Maps.Count} maps, {summary.TotalCompletableObjectives} objectives");
 
         // Wait remainder of lobby poll interval (interruptible)
         _wakeSignal.Wait((int)LobbyPollInterval.TotalMilliseconds - 1000);

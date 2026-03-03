@@ -32,9 +32,9 @@ public sealed class MapPlan
     public int ActiveQuestCount { get; init; }
 
     /// <summary>
-    /// Missions (quests) that have objectives on this map, with their specific objectives and bring items.
+    /// Quests that have objectives on this map, with their specific objectives and bring items.
     /// </summary>
-    public IReadOnlyList<MissionPlan> Missions { get; init; } = [];
+    public IReadOnlyList<QuestPlan> Quests { get; init; } = [];
 
     /// <summary>
     /// Quests that will be unlocked by completing quests on this map.

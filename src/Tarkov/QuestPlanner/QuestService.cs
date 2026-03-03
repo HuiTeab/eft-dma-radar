@@ -11,7 +11,7 @@ namespace eft_dma_radar.Tarkov.QuestPlanner;
 /// Core session planning service that produces ordered map recommendations with bring lists.
 /// Joins quest state from DMA memory with tarkov.dev task metadata to minimize total raids.
 /// </summary>
-public static class MissionService
+public static class QuestService
 {
     /// <summary>
     /// Produces a session plan from active quests, task metadata, stash filter, and settings.
@@ -22,11 +22,11 @@ public static class MissionService
     /// <param name="stash">Stash filter for bring-list item ownership checks</param>
     /// <param name="settings">Planning weight settings (not applied in this phase)</param>
     /// <returns>Ordered session plan with per-map bring lists</returns>
-    public static MissionSummary GetSummary(
+    public static QuestSummary GetSummary(
         AvailableQuests quests,
         FrozenDictionary<string, TaskElement> taskData,
         IStashFilter stash,
-        MissionPlannerSettings settings)
+        QuestPlannerSettings settings)
     {
         // NOTE: Filter flags from settings are applied below before scoring/ranking.
 
@@ -68,12 +68,12 @@ public static class MissionService
         // 4. Apply dependency promotion (PLAN-03, PLAN-04)
         var promoted = ApplyDependencyPromotion(ranked, quests.Started, taskData);
 
-        // 5. Build missions, unlock chains, and bring lists per map
+        // 5. Build quest plans, unlock chains, and bring lists per map
         var mapPlans = promoted.Select((score, index) =>
         {
-            var missions = BuildMissionsForMap(score.MapId, completable, quests.Started, stash);
+            var questPlans = BuildQuestsForMap(score.MapId, completable, quests.Started, stash);
             var unlockedQuests = GetUnlockedQuestsForMap(score.QuestIds, taskData);
-            var filteredBringList = BuildFilteredBringList(missions);
+            var filteredBringList = BuildFilteredBringList(questPlans);
             var bringList = BuildBringList(score.MapId, completable, stash);
 
             return new MapPlan
@@ -83,7 +83,7 @@ public static class MissionService
                 IsRecommended = index == 0,
                 CompletableObjectiveCount = score.ObjectiveCount,
                 ActiveQuestCount = score.QuestIds.Count,
-                Missions = missions,
+                Quests = questPlans,
                 UnlockedQuests = unlockedQuests,
                 FilteredBringList = filteredBringList,
                 BringList = bringList
@@ -91,16 +91,16 @@ public static class MissionService
         }).ToList();
 
         // 6. Build All Maps section: quests with completable objectives that have no map attribution
-        var allMapsMissions = BuildAllMapsMissions(completable, quests.Started, stash);
+        var allMapsQuests = BuildAllMapsQuests(completable, quests.Started, stash);
 
         // 7. Compute Find-in-raid items and Hand-over-items for new UI features
         var firItems = BuildFirItems(quests.Started, taskData);
         var handOverItems = BuildHandOverItems(quests.Started, taskData);
 
-        return new MissionSummary
+        return new QuestSummary
         {
             Maps = mapPlans,
-            AllMapsMissions = allMapsMissions,
+            AllMapsQuests = allMapsQuests,
             TotalActiveQuests = quests.Started.Count,
             TotalCompletableObjectives = completable.Count,
             StashConnected = stash.IsConnected,
@@ -522,7 +522,7 @@ public static class MissionService
     /// Groups completable objectives by quest, with filtered bring items per mission.
     /// Applies findQuestItem/giveQuestItem pairing filter to hide giveQuestItem until findQuestItem is complete.
     /// </summary>
-    private static List<MissionPlan> BuildMissionsForMap(
+    private static List<QuestPlan> BuildQuestsForMap(
         string mapId,
         List<(TaskElement Task, TaskElement.ObjectiveElement Objective)> completableObjectives,
         IReadOnlyList<QuestData> quests,
@@ -558,8 +558,8 @@ public static class MissionService
             list.Add(obj);
         }
 
-        // Build MissionPlan for each task
-        var missions = new List<MissionPlan>();
+        // Build QuestPlan for each task
+        var quests = new List<QuestPlan>();
 
         // Need task names from completableObjectives
         var taskNames = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -608,15 +608,15 @@ public static class MissionService
                 ));
             }
 
-            missions.Add(new MissionPlan
+            quests.Add(new QuestPlan
             {
-                MissionName = taskName,
+                QuestName = taskName,
                 Objectives = filteredObjectives,
                 BringItems = bringItems
             });
         }
 
-        return missions;
+        return quests;
     }
 
     /// <summary>
@@ -720,12 +720,12 @@ public static class MissionService
     }
 
     /// <summary>
-    /// Builds aggregated bring list at map level from all missions.
-    /// Aggregates by item name across all missions, summing counts.
+    /// Builds aggregated bring list at map level from all quests.
+    /// Aggregates by item name across all quests, summing counts.
     /// </summary>
-    private static List<BringItem> BuildFilteredBringList(List<MissionPlan> missions)
+    private static List<BringItem> BuildFilteredBringList(List<QuestPlan> quests)
     {
-        return missions
+        return quests
             .SelectMany(m => m.BringItems)
             .GroupBy(i => string.Join("|", i.Alternatives))
             .Select(g => new BringItem
@@ -794,7 +794,7 @@ public static class MissionService
     /// These appear in the "All Maps" section at the bottom of the Quest Planner.
     /// Applies findQuestItem/giveQuestItem pairing filter and excludes FIR pair objectives.
     /// </summary>
-    private static List<MissionPlan> BuildAllMapsMissions(
+    private static List<QuestPlan> BuildAllMapsQuests(
         List<(TaskElement Task, TaskElement.ObjectiveElement Objective)> completableObjectives,
         IReadOnlyList<QuestData> quests,
         IStashFilter stash)
@@ -828,7 +828,7 @@ public static class MissionService
             entry.Objectives.Add(obj);
         }
 
-        var missions = new List<MissionPlan>();
+        var quests = new List<QuestPlan>();
         foreach (var (taskId, (taskName, objectives)) in objectivesByTask)
         {
             // Build findQuestItem pairing lookup
@@ -882,19 +882,19 @@ public static class MissionService
                 ));
             }
 
-            // Only add mission if there are objectives remaining (skip pure FIR quests)
+            // Only add quest if there are objectives remaining (skip pure FIR quests)
             if (filteredObjectives2.Count > 0)
             {
-                missions.Add(new MissionPlan
+                quests.Add(new QuestPlan
                 {
-                    MissionName = taskName,
+                    QuestName = taskName,
                     Objectives = filteredObjectives2,
                     BringItems = BuildBringListForMission(objectives, taskName, stash)
                 });
             }
         }
 
-        return missions;
+        return quests;
     }
 
     /// <summary>

@@ -1,10 +1,10 @@
 namespace eft_dma_radar.Tarkov.QuestPlanner.Models;
 
 /// <summary>
-/// Root DTO returned by MissionService.GetSummary().
+/// Root DTO returned by QuestService.GetSummary().
 /// Contains the ordered session plan with maps, quest/objective counts, and stash status.
 /// </summary>
-public sealed class MissionSummary
+public sealed class QuestSummary
 {
     /// <summary>
     /// Ordered maps in the session plan, highest priority first.
@@ -15,7 +15,7 @@ public sealed class MissionSummary
     /// Active quests whose completable objectives have no map attribution (e.g. Gunsmith series).
     /// Always populated — shown as an "All Maps" section at the bottom of the Quest Planner.
     /// </summary>
-    public IReadOnlyList<MissionPlan> AllMapsMissions { get; init; } = [];
+    public IReadOnlyList<QuestPlan> AllMapsQuests { get; init; } = [];
 
     /// <summary>
     /// Count of active quests from memory (Status=Started).

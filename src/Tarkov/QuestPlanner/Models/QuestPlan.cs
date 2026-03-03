@@ -60,12 +60,12 @@ public sealed record HandOverItemInfo(
 /// Per-mission data within a map plan.
 /// Contains the quest name, its objectives on this map, and specific items to bring.
 /// </summary>
-public sealed class MissionPlan
+public sealed class QuestPlan
 {
     /// <summary>
     /// The quest/mission name.
     /// </summary>
-    public string MissionName { get; init; } = string.Empty;
+    public string QuestName { get; init; } = string.Empty;
 
     /// <summary>
     /// List of objectives for this mission on the current map with completion state.

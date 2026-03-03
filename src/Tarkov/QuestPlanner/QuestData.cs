@@ -1,13 +1,13 @@
 namespace eft_dma_radar.Tarkov.QuestPlanner
 {
     /// <summary>
-    /// Quest state data contract between QuestReader and MissionService.
+    /// Quest state data contract between QuestReader and QuestService.
     /// Represents a single active (Status=Started) quest from the player's profile memory.
     /// </summary>
     /// <remarks>
     /// Memory source: Profile.QuestsData (offset 0x98) -> UnityList&lt;QuestStatusData&gt;
     /// Only quests with EQuestStatus.Started (2) are included.
-    /// This is the ONLY type passed from the memory layer to Phase 2 MissionService --
+    /// This is the ONLY type passed from the memory layer to Phase 2 QuestService --
     /// no direct coupling to QuestManagerV2 types.
     /// </remarks>
     public sealed class QuestData

@@ -2,7 +2,7 @@ namespace eft_dma_radar.Tarkov.QuestPlanner;
 
 /// <summary>
 /// Interface for stash ownership queries.
-/// Used by MissionService to filter bring-list items based on player inventory.
+/// Used by QuestService to filter bring-list items based on player inventory.
 /// </summary>
 public interface IStashFilter
 {
