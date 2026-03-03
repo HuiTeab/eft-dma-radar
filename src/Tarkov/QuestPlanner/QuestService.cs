@@ -14,18 +14,16 @@ namespace eft_dma_radar.Tarkov.QuestPlanner;
 public static class QuestService
 {
     /// <summary>
-    /// Produces a session plan from active quests, task metadata, stash filter, and settings.
+    /// Produces a session plan from active quests, task metadata, and settings.
     /// This is the central computation: raw quest IDs + task metadata = actionable plan.
     /// </summary>
     /// <param name="quests">Quests grouped by status from DMA memory</param>
     /// <param name="taskData">Task metadata from tarkov.dev, keyed by task ID</param>
-    /// <param name="stash">Stash filter for bring-list item ownership checks</param>
     /// <param name="settings">Planning weight settings (not applied in this phase)</param>
     /// <returns>Ordered session plan with per-map bring lists</returns>
     public static QuestSummary GetSummary(
         AvailableQuests quests,
         FrozenDictionary<string, TaskElement> taskData,
-        IStashFilter stash,
         QuestPlannerSettings settings)
     {
         // NOTE: Filter flags from settings are applied below before scoring/ranking.
@@ -71,7 +69,7 @@ public static class QuestService
         // 5. Build quest plans, unlock chains, and bring lists per map
         var mapPlans = promoted.Select((score, index) =>
         {
-            var questPlans = BuildQuestsForMap(score.MapId, completable, quests.Started, stash);
+            var questPlans = BuildQuestsForMap(score.MapId, completable, quests.Started);
             var unlockedQuests = GetUnlockedQuestsForMap(score.QuestIds, taskData);
             var filteredBringList = BuildFilteredBringList(questPlans);
 
@@ -89,7 +87,7 @@ public static class QuestService
         }).ToList();
 
         // 6. Build All Maps section: quests with completable objectives that have no map attribution
-        var allMapsQuests = BuildAllMapsQuests(completable, quests.Started, stash);
+        var allMapsQuests = BuildAllMapsQuests(completable, quests.Started);
 
         // 7. Compute Find-in-raid items and Hand-over-items for new UI features
         var firItems = BuildFirItems(quests.Started, taskData);
@@ -101,8 +99,6 @@ public static class QuestService
             AllMapsQuests = allMapsQuests,
             TotalActiveQuests = quests.Started.Count,
             TotalCompletableObjectives = completable.Count,
-            StashConnected = stash.IsConnected,
-            StashStatus = stash.IsConnected ? null : "Stash not connected - showing all required items",
             AvailableForStartTraders = startTraders,
             AvailableForFinishTraders = finishTraders,
             FirItems = firItems,
@@ -435,8 +431,7 @@ public static class QuestService
     private static List<QuestPlan> BuildQuestsForMap(
         string mapId,
         List<(TaskElement Task, TaskElement.ObjectiveElement Objective)> completableObjectives,
-        IReadOnlyList<QuestData> quests,
-        IStashFilter stash)
+        IReadOnlyList<QuestData> quests)
     {
         // Build lookup for completed conditions and counters by quest ID
         var completedByQuestId = quests.ToDictionary(q => q.Id, q => q.CompletedConditions, StringComparer.OrdinalIgnoreCase);
@@ -482,7 +477,7 @@ public static class QuestService
         foreach (var (taskId, objectives) in objectivesByTask)
         {
             var taskName = taskNames.GetValueOrDefault(taskId, taskId);
-            var bringItems = BuildBringListForQuest(objectives, taskName, stash);
+            var bringItems = BuildBringListForQuest(objectives, taskName);
 
             // Build findQuestItem pairing lookup from ALL task objectives (not just map-filtered ones)
             var taskRef = taskRefById.GetValueOrDefault(taskId);
@@ -540,8 +535,7 @@ public static class QuestService
     /// </summary>
     private static List<BringItem> BuildBringListForQuest(
         List<TaskElement.ObjectiveElement> objectives,
-        string taskName,
-        IStashFilter stash)
+        string taskName)
     {
         var items = new List<BringItem>();
 
@@ -552,10 +546,6 @@ public static class QuestService
             {
                 foreach (var keySlot in obj.RequiredKeys)
                 {
-                    // Skip if player already owns ANY of the alternatives
-                    if (keySlot.Any(k => stash.Owns(k.Id)))
-                        continue;
-
                     items.Add(new BringItem
                     {
                         Alternatives = keySlot.Select(k => k.Name).ToList(),
@@ -569,7 +559,7 @@ public static class QuestService
             // For plantItem objectives: use Item field (e.g., Iskra ration pack, etc.)
             if (obj.Type == "mark")
             {
-                if (obj.MarkerItem != null && !stash.Owns(obj.MarkerItem.Id))
+                if (obj.MarkerItem != null)
                 {
                     items.Add(new BringItem { Alternatives = [obj.MarkerItem.Name], QuestName = taskName, Type = BringItemType.QuestItem });
                 }
@@ -582,7 +572,7 @@ public static class QuestService
             else if (obj.Type == "plantItem")
             {
                 // PlantItem objectives store the item to plant in Item field
-                if (obj.Item != null && !stash.Owns(obj.Item.Id))
+                if (obj.Item != null)
                 {
                     items.Add(new BringItem { Alternatives = [obj.Item.Name], QuestName = taskName, Type = BringItemType.QuestItem });
                 }
@@ -592,7 +582,7 @@ public static class QuestService
             // INCLUDE: giveQuestItem, plant (hand over or place)
             // EXCLUDE: findQuestItem (must find in raid)
             // EXCLUDE: plantItem (handled above with QuestItem check)
-            if (obj.QuestItem != null && !stash.Owns(obj.QuestItem.Id) && obj.Type != "plantItem")
+            if (obj.QuestItem != null && obj.Type != "plantItem")
             {
                 var include = obj.Type switch
                 {
@@ -706,8 +696,7 @@ public static class QuestService
     /// </summary>
     private static List<QuestPlan> BuildAllMapsQuests(
         List<(TaskElement Task, TaskElement.ObjectiveElement Objective)> completableObjectives,
-        IReadOnlyList<QuestData> quests,
-        IStashFilter stash)
+        IReadOnlyList<QuestData> quests)
     {
         var completedByQuestId = quests.ToDictionary(q => q.Id, q => q.CompletedConditions, StringComparer.OrdinalIgnoreCase);
         var countersByQuestId = quests.ToDictionary(q => q.Id, q => q.ConditionCounters, StringComparer.OrdinalIgnoreCase);
@@ -799,7 +788,7 @@ public static class QuestService
                 {
                     QuestName = taskName,
                     Objectives = filteredObjectives,
-                    BringItems = BuildBringListForQuest(objectives, taskName, stash)
+                    BringItems = BuildBringListForQuest(objectives, taskName)
                 });
             }
         }

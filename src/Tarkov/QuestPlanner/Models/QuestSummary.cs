@@ -2,7 +2,7 @@ namespace eft_dma_radar.Tarkov.QuestPlanner.Models;
 
 /// <summary>
 /// Root DTO returned by QuestService.GetSummary().
-/// Contains the ordered session plan with maps, quest/objective counts, and stash status.
+/// Contains the ordered session plan with maps, quest/objective counts.
 /// </summary>
 public sealed class QuestSummary
 {
@@ -26,18 +26,6 @@ public sealed class QuestSummary
     /// Count of completable objectives across all maps.
     /// </summary>
     public int TotalCompletableObjectives { get; init; }
-
-    /// <summary>
-    /// Whether the stash filter is active and connected.
-    /// When false, the bring list shows ALL required items.
-    /// </summary>
-    public bool StashConnected { get; init; }
-
-    /// <summary>
-    /// Stash connection status message.
-    /// Null when connected; "Stash not connected - showing all required items" when not.
-    /// </summary>
-    public string? StashStatus { get; init; }
 
     /// <summary>
     /// Distinct trader names that have quests ready to start (AvailableForStart status).

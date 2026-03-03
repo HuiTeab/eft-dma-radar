@@ -221,7 +221,7 @@ internal static class QuestPlannerService
         }
 
         var settings = ConfigManager.CurrentConfig.QuestPlanner;
-        var summary = QuestService.GetSummary(quests, EftDataManager.TaskData, NullStashFilter.Instance, settings);
+        var summary = QuestService.GetSummary(quests, EftDataManager.TaskData, settings);
         Current = summary;
         _lastQuestState = quests;
         _forceRecompute = false;

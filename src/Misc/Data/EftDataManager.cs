@@ -212,7 +212,6 @@ namespace eft_dma_radar.Common.Misc.Data
             }
 
             try
-            try
             {
                 loading.UpdateStatus("Loading embedded default data...", loading.PercentComplete);
 
