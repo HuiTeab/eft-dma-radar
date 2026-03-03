@@ -921,6 +921,8 @@ namespace eft_dma_radar.Tarkov.Features.MemoryWrites
         
             Cache = null;
             _lastShotIndex = -1;
+            Cache?.OriginalShotDirection = null;
+            Cache?.OriginalShotNeedsFovAdjust = null;    
         }
         /// <summary>
         /// Restore the original shot direction / FOV flag for the current PWA.
