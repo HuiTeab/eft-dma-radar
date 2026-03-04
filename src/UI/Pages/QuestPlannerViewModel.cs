@@ -4,7 +4,7 @@ using eft_dma_radar.Tarkov.QuestPlanner;
 using eft_dma_radar.Tarkov.QuestPlanner.Models;
 using eft_dma_radar.UI.Misc;
 
-namespace eft_dma_radar.UI;
+namespace eft_dma_radar.UI.Pages;
 
 /// <summary>
 /// Reactive ViewModel for the Quest Planner panel.
