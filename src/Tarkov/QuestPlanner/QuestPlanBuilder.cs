@@ -43,7 +43,7 @@ public static class QuestPlanBuilder
             .OrderBy(n => n)
             .ToList();
 
-        // 1. Find all completable objectives (PLAN-01) - only from Started quests
+        // 1. Find all completable objectives - only from Started quests
         var completable = GetCompletableObjectives(quests.Started, taskData).ToList();
 
         // Apply Kappa filter: restrict to Kappa-required quests only when enabled.
@@ -56,14 +56,14 @@ public static class QuestPlanBuilder
                 .ToList();
         }
 
-        // 2. Score maps by completable objectives (PLAN-01, PLAN-02)
+        // 2. Score maps by completable objectives
         var scores = ScoreMaps(completable);
 
-        // 3. Compute unlock counts per map, then rank by unlocks DESC, quest count DESC (PLAN-05)
+        // 3. Compute unlock counts per map, then rank by unlocks DESC, quest count DESC
         ComputeUnlockCounts(scores, quests.Started, taskData);
         var ranked = RankMaps(scores);
 
-        // 4. Apply dependency promotion (PLAN-03, PLAN-04)
+        // 4. Apply dependency promotion
         var promoted = ApplyDependencyPromotion(ranked, quests.Started, taskData);
 
         // 5. Build quest plans, unlock chains, and bring lists per map
@@ -108,7 +108,7 @@ public static class QuestPlanBuilder
     }
 
     /// <summary>
-    /// PLAN-01: Identifies objectives that are currently completable.
+    /// Identifies objectives that are currently completable.
     /// An objective is completable when (a) its parent quest is active AND (b) the objective's ID
     /// is NOT in CompletedConditions.
     /// </summary>
@@ -159,7 +159,7 @@ public static class QuestPlanBuilder
     };
 
     /// <summary>
-    /// PLAN-01, PLAN-02: Scores each map by counting completable objectives with explicit map attribution.
+    /// Scores each map by counting completable objectives with explicit map attribution.
     /// Objectives with null or empty Maps field contribute to no map's score ("any location" exclusion).
     /// Uses case-insensitive dictionary to handle map ID variations (Pitfall 6).
     /// Merges map variants (Sandbox + Sandbox_high) into single entries.
@@ -291,7 +291,7 @@ public static class QuestPlanBuilder
     }
 
     /// <summary>
-    /// PLAN-05: Base ranking by finishable quest count DESC, unlock count DESC, total quest count DESC.
+    /// Base ranking by finishable quest count DESC, unlock count DESC, total quest count DESC.
     /// Finishable quests (completable on this map alone) are prioritized over multi-map quests.
     /// </summary>
     private static List<MapScore> RankMaps(Dictionary<string, MapScore> scores)
@@ -304,7 +304,7 @@ public static class QuestPlanBuilder
     }
 
     /// <summary>
-    /// PLAN-03, PLAN-04: Topological sort based on unlock dependencies.
+    /// Topological sort based on unlock dependencies.
     /// If MapA unlocks quests on MapB, MapA must come before MapB.
     /// This minimizes revisits - when you visit a map, all unlocks from earlier maps are available.
     /// </summary>
