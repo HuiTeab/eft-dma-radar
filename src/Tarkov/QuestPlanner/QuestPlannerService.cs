@@ -1,4 +1,3 @@
-using System.Collections.Frozen;
 using eft_dma_radar.Common.Misc;
 using eft_dma_radar.Common.Misc.Data;
 using eft_dma_radar.Common.Unity;
@@ -124,10 +123,8 @@ internal static class QuestPlannerService
             }
             catch (Exception ex)
             {
-                var errorDetails = ex.Message;
-                if (ex.InnerException != null)
-                    errorDetails += $" | Inner: {ex.InnerException.Message}";
-                XMLogging.WriteLine($"[QuestPlannerService] ERROR: {errorDetails}");
+                var msg = ex.InnerException is { } inner ? $"{ex.Message} | Inner: {inner.Message}" : ex.Message;
+                XMLogging.WriteLine($"[QuestPlannerService] ERROR: {msg}");
                 State = QuestConnectionState.Disconnected;
                 Current = null;
             }
@@ -200,10 +197,17 @@ internal static class QuestPlannerService
         // Profile resolved - clear stale flag
         IsStale = false;
 
-        // 5. Read quest state (all statuses: Started, AvailableForStart, AvailableForFinish)
+        // 5. Ensure task data is ready before doing any memory reads or diff work
+        if (!EftDataManager.IsInitialized)
+        {
+            XMLogging.WriteLine("[QuestPlannerService] TaskData not yet initialized - skipping");
+            return;
+        }
+
+        // 6. Read quest state (all statuses: Started, AvailableForStart, AvailableForFinish)
         var quests = QuestReader.ReadAvailableQuests(profileAddr);
 
-        // 6. Change detection: skip recompute if quest state unchanged
+        // 7. Change detection: skip recompute if quest state unchanged
         if (!_forceRecompute && !HasQuestStateChanged(quests, _lastQuestState))
         {
             // No change - wait full lobby poll interval before next check (interruptible)
@@ -212,14 +216,8 @@ internal static class QuestPlannerService
             return;
         }
 
-        // 7. Recompute quest summary
+        // 8. Recompute quest summary
         XMLogging.WriteLine($"[QuestPlannerService] Recomputing plan ({quests.Started.Count} active quests)");
-
-        if (!EftDataManager.IsInitialized)
-        {
-            XMLogging.WriteLine("[QuestPlannerService] TaskData not yet initialized - skipping");
-            return;
-        }
 
         var settings = ConfigManager.CurrentConfig.QuestPlanner;
         var summary = QuestService.GetSummary(quests, EftDataManager.TaskData, settings);
@@ -257,28 +255,13 @@ internal static class QuestPlannerService
     }
 
     /// <summary>
-    /// Detects if quest state has changed by comparing quest IDs and completed conditions.
-    /// Uses SetEquals for efficient comparison of completed condition sets.
-    /// Compares all three status groups (Started, AvailableForStart, AvailableForFinish).
+    /// Detects if quest state has changed by comparing quest IDs and completed conditions
+    /// across all three status groups (Started, AvailableForStart, AvailableForFinish).
     /// </summary>
-    private static bool HasQuestStateChanged(
-        AvailableQuests current,
-        AvailableQuests previous)
-    {
-        // Check Started quests
-        if (HasQuestListChanged(current.Started, previous.Started))
-            return true;
-
-        // Check AvailableForStart quests
-        if (HasQuestListChanged(current.AvailableForStart, previous.AvailableForStart))
-            return true;
-
-        // Check AvailableForFinish quests
-        if (HasQuestListChanged(current.AvailableForFinish, previous.AvailableForFinish))
-            return true;
-
-        return false;
-    }
+    private static bool HasQuestStateChanged(AvailableQuests current, AvailableQuests previous) =>
+        HasQuestListChanged(current.Started, previous.Started)
+        || HasQuestListChanged(current.AvailableForStart, previous.AvailableForStart)
+        || HasQuestListChanged(current.AvailableForFinish, previous.AvailableForFinish);
 
     /// <summary>
     /// Compares two quest lists for changes in IDs or completed conditions.
