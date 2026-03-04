@@ -9,7 +9,7 @@ namespace eft_dma_radar.UI;
 /// <summary>
 /// Reactive ViewModel for the Quest Planner panel.
 /// Provides data binding for quest summary and connection state.
-/// Uses a 1-second DispatcherTimer to poll QuestPlannerService.Current.
+/// Uses a 1-second DispatcherTimer to poll QuestPlannerWorker.Current.
 /// </summary>
 public sealed class QuestPlannerViewModel : INotifyPropertyChanged
 {
@@ -95,7 +95,7 @@ public sealed class QuestPlannerViewModel : INotifyPropertyChanged
             ConfigManager.CurrentConfig.QuestPlanner.KappaFilter = value;
             ConfigManager.CurrentConfig.Save();
             OnPropertyChanged(nameof(KappaFilterEnabled));
-            QuestPlannerService.ForceRecompute();
+            QuestPlannerWorker.ForceRecompute();
         }
     }
 
@@ -191,9 +191,9 @@ public sealed class QuestPlannerViewModel : INotifyPropertyChanged
     private void OnTimerTick(object? sender, EventArgs e)
     {
         var previousState = _connectionState;
-        var state = QuestPlannerService.State;
-        var summary = QuestPlannerService.Current;
-        var isStale = QuestPlannerService.IsStale;
+        var state = QuestPlannerWorker.State;
+        var summary = QuestPlannerWorker.Current;
+        var isStale = QuestPlannerWorker.IsStale;
 
         ConnectionState = state;
         IsStale = isStale;

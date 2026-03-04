@@ -1,7 +1,7 @@
 namespace eft_dma_radar.Tarkov.QuestPlanner.Models;
 
 /// <summary>
-/// Root DTO returned by QuestService.GetSummary().
+/// Root DTO returned by QuestPlanBuilder.GetSummary().
 /// Contains the ordered session plan with maps, quest/objective counts.
 /// </summary>
 public sealed class QuestSummary

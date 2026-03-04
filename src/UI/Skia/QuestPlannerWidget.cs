@@ -43,8 +43,8 @@ namespace eft_dma_radar.UI.SKWidgetControl
                 ClientRectangle.Left + _padding,
                 ClientRectangle.Top + lineSpacing * 0.8f + _padding);
 
-            var summary = QuestPlannerService.Current;
-            var state = QuestPlannerService.State;
+            var summary = QuestPlannerWorker.Current;
+            var state = QuestPlannerWorker.State;
 
             if (summary == null || state == QuestConnectionState.Disconnected)
             {

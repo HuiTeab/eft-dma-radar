@@ -11,7 +11,7 @@ namespace eft_dma_radar.Tarkov.QuestPlanner;
 /// Core session planning service that produces ordered map recommendations with bring lists.
 /// Joins quest state from DMA memory with tarkov.dev task metadata to minimize total raids.
 /// </summary>
-public static class QuestService
+public static class QuestPlanBuilder
 {
     /// <summary>
     /// Produces a session plan from active quests, task metadata, and settings.

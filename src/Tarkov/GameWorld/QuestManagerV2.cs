@@ -33,10 +33,10 @@ namespace eft_dma_radar.Tarkov.GameWorld
     /// - Dictionary<EQuestStatus, ConditionCollection>: standard IL2CPP Dict
     ///   - Entry: hashCode(4) + next(4) + key(4) + pad(4) + value ptr(8) = 24 bytes
     ///
-    /// IMPORTANT: Distinction from QuestReader
+    /// IMPORTANT: Distinction from QuestMemoryReader
     /// This class reads quest ZONES IN-RAID from LocalGameWorld -> Player -> QuestManager
-    /// for radar map display. It has nothing to do with QuestReader in QuestPlanner/.
-    /// QuestReader reads quest STATUS from the player Profile (lobby + in-raid fallback)
+    /// for radar map display. It has nothing to do with QuestMemoryReader in QuestPlanner/.
+    /// QuestMemoryReader reads quest STATUS from the player Profile (lobby + in-raid fallback)
     /// for session planning. These are separate memory paths serving separate purposes.
     /// </summary>
     public sealed class QuestManagerV2

@@ -514,7 +514,7 @@ namespace eft_dma_radar
 
                 loading.UpdateStatus("Loading Remaining Modules...", 75);
                 FeatureManager.ModuleInit();
-                QuestPlannerService.ModuleInit(); // Quest Planner background service
+                QuestPlannerWorker.ModuleInit(); // Quest Planner background service
 
                 ResourceJanitor.ModuleInit(new Action(CleanupWindowResources));
 

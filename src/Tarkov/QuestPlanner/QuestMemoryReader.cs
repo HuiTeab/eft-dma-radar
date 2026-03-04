@@ -49,7 +49,7 @@ namespace eft_dma_radar.Tarkov.QuestPlanner
     ///
     /// Verified offsets 2026-02-24 via eft-mission-reader probe.
     /// </summary>
-    public static class QuestReader
+    public static class QuestMemoryReader
     {
         /// <summary>
         /// Reads all quests from the player's profile grouped by status.
@@ -68,7 +68,7 @@ namespace eft_dma_radar.Tarkov.QuestPlanner
 
             if (profile == 0)
             {
-                XMLogging.WriteLine("[QuestReader] Invalid profile address (0)");
+                XMLogging.WriteLine("[QuestMemoryReader] Invalid profile address (0)");
                 return new AvailableQuests();
             }
 
@@ -82,7 +82,7 @@ namespace eft_dma_radar.Tarkov.QuestPlanner
 
                 if (questsDataPtr == 0)
                 {
-                    XMLogging.WriteLine("[QuestReader] QuestsData pointer is null");
+                    XMLogging.WriteLine("[QuestMemoryReader] QuestsData pointer is null");
                     return new AvailableQuests();
                 }
 
@@ -146,12 +146,12 @@ namespace eft_dma_radar.Tarkov.QuestPlanner
 
                 if (started.Count > 0 || availableForStart.Count > 0 || availableForFinish.Count > 0)
                 {
-                    XMLogging.WriteLine($"[QuestReader] Found {started.Count} Started, {availableForStart.Count} AvailableForStart, {availableForFinish.Count} AvailableForFinish quests");
+                    XMLogging.WriteLine($"[QuestMemoryReader] Found {started.Count} Started, {availableForStart.Count} AvailableForStart, {availableForFinish.Count} AvailableForFinish quests");
                 }
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"[QuestReader] Error reading quests: {ex.Message}");
+                XMLogging.WriteLine($"[QuestMemoryReader] Error reading quests: {ex.Message}");
             }
 
             return new AvailableQuests
@@ -225,7 +225,7 @@ namespace eft_dma_radar.Tarkov.QuestPlanner
             }
             catch (Exception ex)
             {
-                XMLogging.WriteLine($"[QuestReader] Error reading condition counters: {ex.Message}");
+                XMLogging.WriteLine($"[QuestMemoryReader] Error reading condition counters: {ex.Message}");
             }
 
             return counters;
