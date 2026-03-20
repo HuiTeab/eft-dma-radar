@@ -34,9 +34,9 @@ namespace eft_dma_radar.Tarkov.WebRadar
         private static readonly HttpClient _httpClient = new() { Timeout = TimeSpan.FromSeconds(5) };
 
         private static WebRadarUpdate _latest = new();
-        private static WebApplication _host;
-        private static CancellationTokenSource _cts;
-        private static Thread _worker;
+        private static WebApplication? _host;
+        private static CancellationTokenSource? _cts;
+        private static Thread? _worker;
 
         public static async Task StartAsync(
             string ip,
@@ -241,9 +241,9 @@ namespace eft_dma_radar.Tarkov.WebRadar
         {
             while (!ct.IsCancellationRequested)
             {
-                    bool hasLocal   = Memory.LocalPlayer is not null;
+                    bool hasLocal   = Memory?.LocalPlayer is not null;
                     bool handsValid = hasLocal &&
-                                      Memory.LocalPlayer.Firearm.HandsController.Item1.IsValidVirtualAddress();                
+                                      Memory!.LocalPlayer!.Firearm.HandsController.Item1.IsValidVirtualAddress();
                 if(!handsValid)
                 {
                     _latest = new WebRadarUpdate();
@@ -252,9 +252,9 @@ namespace eft_dma_radar.Tarkov.WebRadar
                 }
                 try
                 {
-                    _latest.InGame   = Memory.InRaid;
-                    _latest.InRaid   = Memory.InRaid;
-                    _latest.MapID    = Memory.MapID;
+                    _latest.InGame   = Memory!.InRaid;
+                    _latest.InRaid   = Memory!.InRaid;
+                    _latest.MapID    = Memory!.MapID;
                     _latest.SendTime = DateTime.UtcNow;
                     _latest.Version++;
         
@@ -336,7 +336,7 @@ namespace eft_dma_radar.Tarkov.WebRadar
 
             try
             {
-                string ip = null;
+                string? ip = null;
 
                 try
                 {
@@ -397,7 +397,7 @@ namespace eft_dma_radar.Tarkov.WebRadar
         /// Get the local LAN IPv4 address of this machine.
         /// </summary>
         /// <returns>Local LAN IP address, or null if not found.</returns>
-        public static string GetLocalIPAddress()
+        public static string? GetLocalIPAddress()
         {
             try
             {

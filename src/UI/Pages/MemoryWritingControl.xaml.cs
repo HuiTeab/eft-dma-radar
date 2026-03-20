@@ -456,9 +456,9 @@ namespace eft_dma_radar.UI.Pages
 
             foreach (CheckComboBoxItem item in ccbAimbotOptions.Items)
             {
-                var content = item.Content.ToString();
+                var content = item.Content?.ToString();
 
-                if (optionsToUpdate.TryGetValue(content, out bool shouldBeSelected))
+                if (content is not null && optionsToUpdate.TryGetValue(content, out bool shouldBeSelected))
                     item.IsSelected = shouldBeSelected;
             }
         }

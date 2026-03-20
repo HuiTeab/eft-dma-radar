@@ -1,3 +1,4 @@
+#nullable enable
 using eft_dma_radar.Common.DMA.ScatterAPI;
 using eft_dma_radar.Common.Misc;
 using eft_dma_radar.Common.Unity;
@@ -61,11 +62,11 @@ namespace eft_dma_radar.Tarkov.Features
                 if (!ChamsConfig.Enabled)
                 {
                     DLog("Chams disabled -> RevertAllPlayerChams");
-                    RevertAllPlayerChams(writes, game);
+                    if (game != null) RevertAllPlayerChams(writes, game);
                     return;
                 }
 
-                var activePlayers = game.Players.Where(x => x.IsHostileActive || x.Type == Player.PlayerType.Teammate).ToList();
+                var activePlayers = (game?.Players?.Where(x => x.IsHostileActive || x.Type == Player.PlayerType.Teammate).ToList()) ?? [];
                 DLog($"ActivePlayers={activePlayers.Count}");
 
                 if (!activePlayers.Any())
@@ -92,11 +93,11 @@ namespace eft_dma_radar.Tarkov.Features
                         continue;
                     }
 
-                    ApplyChamsToPlayer(writes, game, player, entitySettings);
+                    ApplyChamsToPlayer(writes, game!, player, entitySettings);
                 }
 
-                ProcessDeathReverts(writes, game);
-                CleanupInactivePlayers(game.Players.Select(p => p.Base).ToHashSet());
+                ProcessDeathReverts(writes, game!);
+                CleanupInactivePlayers((game?.Players?.Select(p => p.Base) ?? []).ToHashSet());
                 SaveCache();
             }
             catch (Exception ex)
@@ -873,7 +874,7 @@ namespace eft_dma_radar.Tarkov.Features
             return state;
         }
 
-        private static PlayerChamsState GetState(ulong playerBase)
+        private static PlayerChamsState? GetState(ulong playerBase)
         {
             return _playerStates.TryGetValue(playerBase, out var state) ? state : null;
         }
@@ -943,7 +944,7 @@ namespace eft_dma_radar.Tarkov.Features
                 RevertPlayerChams(playerBase, game);
         }
 
-        private static void RevertPlayerChams(ulong playerBase, LocalGameWorld game = null)
+        private static void RevertPlayerChams(ulong playerBase, LocalGameWorld? game = null)
         {
             try
             {
@@ -966,7 +967,7 @@ namespace eft_dma_radar.Tarkov.Features
             }
         }
 
-        private static void RestorePlayerMaterials(ulong playerBase, CachedPlayerMaterials cached, LocalGameWorld game)
+        private static void RestorePlayerMaterials(ulong playerBase, CachedPlayerMaterials cached, LocalGameWorld? game)
         {
             try
             {
@@ -990,7 +991,7 @@ namespace eft_dma_radar.Tarkov.Features
             }
         }
 
-        private static void RestoreClothingMaterials(Player player, Dictionary<string, Dictionary<int, int>> clothingMaterials)
+        private static void RestoreClothingMaterials(Player player, Dictionary<string, Dictionary<int, int>>? clothingMaterials)
         {
             try
             {
@@ -1007,7 +1008,7 @@ namespace eft_dma_radar.Tarkov.Features
                     for (var rendererIndex = 0; rendererIndex < renderersArray.Count; rendererIndex++)
                     {
                         var key = $"clothing_{containerIndex}_{rendererIndex}";
-                        if (clothingMaterials.TryGetValue(key, out var materials))
+                        if (clothingMaterials?.TryGetValue(key, out var materials) == true)
                         {
                             var skinnedMeshRenderer = renderersArray[rendererIndex];
                             var renderer = Memory.ReadPtr(skinnedMeshRenderer + UnityOffsets.SkinnedMeshRenderer.Renderer);
@@ -1025,7 +1026,7 @@ namespace eft_dma_radar.Tarkov.Features
             }
         }
 
-        private static void RestoreGearMaterials(Player player, Dictionary<string, Dictionary<int, int>> gearMaterials)
+        private static void RestoreGearMaterials(Player player, Dictionary<string, Dictionary<int, int>>? gearMaterials)
         {
             try
             {
@@ -1068,7 +1069,7 @@ namespace eft_dma_radar.Tarkov.Features
                         for (var rendererIndex = 0; rendererIndex < renderersArray.Count; rendererIndex++)
                         {
                             var key = $"gear_{slotIndex}_{dressIndex}_{rendererIndex}";
-                            if (gearMaterials.TryGetValue(key, out var materials))
+                            if (gearMaterials?.TryGetValue(key, out var materials) == true)
                             {
                                 var renderer = renderersArray[rendererIndex];
                                 if (!Utils.IsValidVirtualAddress(renderer))

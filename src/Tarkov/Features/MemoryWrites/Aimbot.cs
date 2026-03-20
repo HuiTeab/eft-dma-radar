@@ -465,7 +465,7 @@ namespace eft_dma_radar.Tarkov.Features.MemoryWrites
                 
                 // DATA-BASED SILENT AIM: Write directly to _shotDirection field instead of patching code
                 // This is safer because it writes to heap memory, not executable code
-                WriteShotDirection(localPlayer.PWA, newWeaponDirection, Cache.FireportTransform);
+                WriteShotDirection(localPlayer.PWA, newWeaponDirection, Cache!.FireportTransform);
                 
                 Cache.LastFireportPos = fireportPosition;
 
